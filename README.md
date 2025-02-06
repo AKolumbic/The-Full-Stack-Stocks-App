@@ -72,7 +72,3 @@ uvicorn main:app --reload
 3. **Create a new branch** for your feature/fix.
 4. **Commit** your changes and push to GitHub.
 5. Open a **pull request** to merge your changes.
-
-## License
-
-This project is licensed under the MIT License.
