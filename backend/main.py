@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from backend.routes.stock_search import router as stock_router
-from backend.routes.watchlist import router as watchlist_router
+from .routes.stock_search import router as stock_router
+from .routes.watchlist import router as watchlist_router
 
 app = FastAPI()
 
