@@ -38,22 +38,27 @@ def get_stock_data(symbol: str):
     url = "https://www.alphavantage.co/query"
     params = {
         "function": "GLOBAL_QUOTE",
-        "symbol": symbol,
+        "symbol": symbol.upper(),  # Ensure uppercase stock symbols
         "apikey": ALPHA_VANTAGE_API_KEY
     }
     response = requests.get(url, params=params)
     data = response.json()
 
-    # Check if stock data is available
-    if "Global Quote" not in data:
-        raise HTTPException(status_code=404, detail="Stock symbol not found")
+    # Debug: Print API response
+    print("Alpha Vantage Response:", data)
+
+    # Validate the response structure
+    if "Global Quote" not in data or not data["Global Quote"]:
+        raise HTTPException(status_code=404, detail=f"Stock symbol '{symbol}' not found or invalid")
 
     quote = data["Global Quote"]
+
+    # Handle missing keys
     stock_data = {
-        "symbol": quote["01. symbol"],
-        "price": float(quote["05. price"]),
-        "change": float(quote["09. change"]),
-        "percent_change": quote["10. change percent"],
+        "symbol": quote.get("01. symbol", symbol),  # Use requested symbol as fallback
+        "price": float(quote.get("05. price", 0)),  # Default to 0 if missing
+        "change": float(quote.get("09. change", 0)),
+        "percent_change": quote.get("10. change percent", "0%"),
         "last_updated": datetime.utcnow()
     }
 
