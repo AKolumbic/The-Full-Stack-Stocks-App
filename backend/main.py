@@ -1,7 +1,10 @@
 from fastapi import FastAPI
-from routes import stock_search
+from backend.routes.stock_search import router as stock_router  # Explicit Import
 
 app = FastAPI()
 
-# Include the stock search API
-app.include_router(stock_search.router)
+app.include_router(stock_router)
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to ASMP Backend"}
