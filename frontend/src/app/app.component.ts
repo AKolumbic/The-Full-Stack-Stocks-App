@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
-import { StockSearchComponent } from './components/stock-search/stock-search.component';
+import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [StockSearchComponent],
-  template: `<app-stock-search></app-stock-search>`,
-  styleUrls: ['./app.component.scss'],
+  imports: [HttpClientModule], // ✅ Manually providing HttpClientModule
+  template: `<h1>Angular Debugging</h1>`,
 })
 export class AppComponent {}
