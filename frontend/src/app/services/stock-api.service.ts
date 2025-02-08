@@ -3,12 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root', // ✅ Ensures this service is available across the entire app
+  providedIn: 'root',
 })
 export class StockApiService {
-  private apiUrl = 'https://api.example.com/stocks'; // Replace with your API
+  private apiUrl = 'http://127.0.0.1:8000/stocks'; // ✅ Update to backend URL
 
-  constructor(private http: HttpClient) {} // ✅ Inject HttpClient correctly
+  constructor(private http: HttpClient) {}
 
   getStockData(symbol: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/${symbol}`).pipe(
