@@ -14,7 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(stock_router)
+# Include routers
+app.include_router(stock_router, prefix="/stocks", tags=["stocks"])
+app.include_router(watchlist_router, prefix="/watchlist", tags=["watchlist"])
 
 @app.get("/")
 def root():
