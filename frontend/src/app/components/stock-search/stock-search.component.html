@@ -1,0 +1,12 @@
+<div class="stock-search">
+  <h2>Stock Search</h2>
+  <input [(ngModel)]="stockSymbol" placeholder="Enter stock symbol" />
+  <button (click)="searchStock()">Search</button>
+
+  <div *ngIf="stockData">
+    <h3>Stock Data for {{ stockSymbol }}</h3>
+    <pre>{{ stockData | json }}</pre>
+  </div>
+
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+</div>
