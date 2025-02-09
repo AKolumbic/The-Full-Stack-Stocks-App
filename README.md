@@ -55,15 +55,14 @@ npm install
 npm start
 ```
 
-<!-- ### Backend Setup
+### Backend Setup
 
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload
-``` -->
+```
 
 ### To Run Backend from root directory from inside venv
 
