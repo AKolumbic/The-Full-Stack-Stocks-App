@@ -1,1 +1,26 @@
-<p>stock-search works!</p>
+<div class="stock-search-container">
+  <h2>Stock Search</h2>
+
+  <input
+    type="text"
+    [(ngModel)]="stockSymbol"
+    placeholder="Enter stock symbol"
+  />
+  <button (click)="searchStock()">Search</button>
+
+  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+  <div *ngIf="stockData">
+    <h3>Stock Data for {{ stockSymbol }}</h3>
+    <p>Price: ${{ stockData.price }}</p>
+    <button (click)="addToWatchlist(stockSymbol)">Add to Watchlist</button>
+  </div>
+
+  <h2>Watchlist</h2>
+  <ul>
+    <li *ngFor="let stock of watchlist">
+      {{ stock }}
+      <button (click)="removeFromWatchlist(stock)">Remove</button>
+    </li>
+  </ul>
+</div>

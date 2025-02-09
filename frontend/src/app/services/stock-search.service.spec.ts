@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { StockApiService } from './stock-api.service';
+import { StockSearchService } from './stock-search.service';
 
-describe('StockApiService', () => {
-  let service: StockApiService;
+describe('StockSearchService', () => {
+  let service: StockSearchService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(StockApiService);
+    service = TestBed.inject(StockSearchService);
   });
 
   it('should be created', () => {
