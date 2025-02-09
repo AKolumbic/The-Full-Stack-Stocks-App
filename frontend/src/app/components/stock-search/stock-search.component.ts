@@ -2,8 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { finalize } from 'rxjs/operators';
 import { StockSearchService } from '../../services/stock-search.service';
-
 @Component({
   selector: 'app-stock-search',
   standalone: true,
@@ -31,19 +31,24 @@ export class StockSearchComponent {
     if (!this.stockSymbol) return;
     this.loading = true; // Show loading
 
-    this.stockService.getStockData(this.stockSymbol).subscribe({
-      next: (data) => {
-        this.stockData = data;
-        this.errorMessage = '';
-      },
-      error: () => {
-        this.errorMessage = `Stock not found: ${this.stockSymbol}`;
-        this.stockData = null;
-      },
-      complete: () => {
-        this.loading = false; // Hide loading
-      },
-    });
+    this.stockService
+      .getStockData(this.stockSymbol)
+      .pipe(
+        finalize(() => {
+          // This will run whether the observable completes successfully or errors.
+          this.loading = false;
+        })
+      )
+      .subscribe({
+        next: (data) => {
+          this.stockData = data;
+          this.errorMessage = '';
+        },
+        error: () => {
+          this.errorMessage = `Stock not found: ${this.stockSymbol}`;
+          this.stockData = null;
+        },
+      });
   }
 
   /**
