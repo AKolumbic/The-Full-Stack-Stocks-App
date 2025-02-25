@@ -3,27 +3,39 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
-import { StockSearchService } from '../../services/stock-search.service';
+import {
+  StockSearchService,
+  StockData,
+  HistoricalData,
+} from '../../services/stock-search.service';
 import { ThemeService, Theme } from '../../services/theme.service';
 import { Subscription } from 'rxjs';
+import {
+  StockChartComponent,
+  ChartData,
+} from '../../components/stock-chart/stock-chart.component';
 
-interface StockData {
-  price: number;
-  change: number;
-  percent_change: string;
+interface WatchlistItem {
+  symbol: string;
+  expanded: boolean;
+  chartData?: ChartData;
+  loading: boolean;
 }
 
 @Component({
   selector: 'app-stock-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, StockChartComponent],
   templateUrl: './stock-search.component.html',
   styleUrls: ['./stock-search.component.scss'],
 })
 export class StockSearchComponent implements OnInit, OnDestroy {
   stockSymbol: string = '';
   stockData: StockData | null = null;
-  watchlist: string[] = [];
+  historicalData: HistoricalData | null = null;
+  chartData: ChartData | null = null;
+  selectedPeriod: string = '1m';
+  watchlist: WatchlistItem[] = [];
   errorMessage: string = '';
   loading: boolean = false;
   currentTheme: Theme;
@@ -88,13 +100,69 @@ export class StockSearchComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.stockData = data;
           this.errorMessage = '';
+          this.getHistoricalData(this.stockSymbol, this.selectedPeriod);
         },
         error: (err) => {
           console.error('Error fetching stock data:', err);
           this.errorMessage = `Stock not found: ${this.stockSymbol}`;
           this.stockData = null;
+          this.chartData = null;
         },
       });
+  }
+
+  /**
+   * Get historical data for the chart
+   */
+  getHistoricalData(symbol: string, period: string = '1m') {
+    this.stockService.getHistoricalData(symbol, period).subscribe({
+      next: (data) => {
+        this.historicalData = data;
+        this.generateChartData(data);
+      },
+      error: (err) => {
+        console.error('Error fetching historical data:', err);
+        this.historicalData = null;
+        this.chartData = null;
+      },
+    });
+  }
+
+  /**
+   * Generate chart data from historical data
+   */
+  private generateChartData(data: HistoricalData) {
+    const dates = data.data.map((point) => point.date);
+    const prices = data.data.map((point) => point.price);
+
+    // Determine if the overall trend is positive or negative
+    const startPrice = prices[0];
+    const endPrice = prices[prices.length - 1];
+    const isPositive = endPrice >= startPrice;
+
+    // Set color based on positive/negative trend
+    const lineColor = isPositive
+      ? 'rgba(75, 192, 75, 1)'
+      : 'rgba(255, 99, 132, 1)';
+    const fillColor = isPositive
+      ? 'rgba(75, 192, 75, 0.2)'
+      : 'rgba(255, 99, 132, 0.2)';
+
+    this.chartData = {
+      dates,
+      prices,
+      trend: data.trend,
+    };
+  }
+
+  /**
+   * Change the time period for the chart
+   */
+  changePeriod(period: string) {
+    this.selectedPeriod = period;
+    if (this.stockSymbol) {
+      this.getHistoricalData(this.stockSymbol, period);
+    }
   }
 
   /**
@@ -103,7 +171,12 @@ export class StockSearchComponent implements OnInit, OnDestroy {
   fetchWatchlist() {
     this.stockService.getWatchlist().subscribe({
       next: (data) => {
-        this.watchlist = data;
+        // Map strings to WatchlistItem objects
+        this.watchlist = data.map((symbol) => ({
+          symbol,
+          expanded: false,
+          loading: false,
+        }));
       },
       error: (err) => {
         console.error('Error fetching watchlist:', err);
@@ -117,7 +190,7 @@ export class StockSearchComponent implements OnInit, OnDestroy {
    */
   addToWatchlist(symbol: string) {
     // Check if already in watchlist to prevent duplicate API calls
-    if (this.watchlist.includes(symbol)) {
+    if (this.watchlist.some((item) => item.symbol === symbol)) {
       this.errorMessage = `${symbol} is already in the watchlist.`;
       return;
     }
@@ -148,5 +221,48 @@ export class StockSearchComponent implements OnInit, OnDestroy {
         this.errorMessage = `${symbol} was not found in the watchlist.`;
       },
     });
+  }
+
+  /**
+   * Toggle expanded state for a watchlist item
+   */
+  toggleWatchlistItem(item: WatchlistItem) {
+    item.expanded = !item.expanded;
+
+    // Load chart data if expanding and not already loaded
+    if (item.expanded && !item.chartData) {
+      item.loading = true;
+      this.stockService.getHistoricalData(item.symbol, '1m').subscribe({
+        next: (data) => {
+          // Generate chart data for this watchlist item
+          const dates = data.data.map((point) => point.date);
+          const prices = data.data.map((point) => point.price);
+
+          // Determine if trend is positive
+          const startPrice = prices[0];
+          const endPrice = prices[prices.length - 1];
+          const isPositive = endPrice >= startPrice;
+
+          // Set color based on trend
+          const lineColor = isPositive
+            ? 'rgba(75, 192, 75, 1)'
+            : 'rgba(255, 99, 132, 1)';
+          const fillColor = isPositive
+            ? 'rgba(75, 192, 75, 0.2)'
+            : 'rgba(255, 99, 132, 0.2)';
+
+          item.chartData = {
+            dates,
+            prices,
+            trend: data.trend,
+          };
+          item.loading = false;
+        },
+        error: (err) => {
+          console.error(`Error fetching chart data for ${item.symbol}:`, err);
+          item.loading = false;
+        },
+      });
+    }
   }
 }

@@ -49,10 +49,27 @@
             }})
           </span>
         </div>
-        <div class="chart-placeholder">
-          <!-- Placeholder for future stock chart -->
-          <div class="placeholder-text">
-            Stock chart visualization would go here
+
+        <!-- Chart period selector -->
+        <div class="period-selector">
+          <button
+            *ngFor="let period of ['1m', '3m', '6m', '1y']"
+            [class.active]="selectedPeriod === period"
+            (click)="changePeriod(period)"
+            class="period-btn"
+          >
+            {{ period }}
+          </button>
+        </div>
+
+        <!-- Chart display -->
+        <div class="chart-container">
+          <app-stock-chart
+            *ngIf="chartData"
+            [chartData]="chartData"
+          ></app-stock-chart>
+          <div *ngIf="!chartData" class="chart-placeholder">
+            <div class="placeholder-text">Loading chart data...</div>
           </div>
         </div>
       </div>
@@ -65,14 +82,38 @@
         watchlist.
       </div>
       <ul *ngIf="watchlist.length > 0" class="watchlist">
-        <li *ngFor="let stock of watchlist" class="watchlist-item">
-          <span class="stock-symbol">{{ stock }}</span>
-          <button
-            (click)="removeFromWatchlist(stock)"
-            class="action-btn remove-btn"
+        <li *ngFor="let item of watchlist" class="watchlist-item">
+          <div
+            class="watchlist-item-header"
+            (click)="toggleWatchlistItem(item)"
           >
-            <i class="icon-trash"></i> Remove
-          </button>
+            <span class="stock-symbol">{{ item.symbol }}</span>
+            <div class="watchlist-actions">
+              <span class="expand-indicator">
+                {{ item.expanded ? "▼" : "▶" }}
+              </span>
+              <button
+                (click)="
+                  removeFromWatchlist(item.symbol); $event.stopPropagation()
+                "
+                class="action-btn remove-btn"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <!-- Expandable chart section -->
+          <div *ngIf="item.expanded" class="watchlist-item-details">
+            <div *ngIf="item.loading" class="mini-spinner-container">
+              <div class="spinner mini-spinner"></div>
+            </div>
+            <app-stock-chart
+              *ngIf="!item.loading && item.chartData"
+              [chartData]="item.chartData"
+              [isMiniChart]="true"
+            ></app-stock-chart>
+          </div>
         </li>
       </ul>
     </div>

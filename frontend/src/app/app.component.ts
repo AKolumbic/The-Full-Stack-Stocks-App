@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
-import { StockSearchComponent } from './components/stock-search/stock-search.component';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [StockSearchComponent],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+  imports: [RouterOutlet],
+  template: `<router-outlet></router-outlet>`,
+  styles: [],
 })
-export class AppComponent {}
+export class AppComponent {
+  title = 'Stock Market Tracker';
+}
