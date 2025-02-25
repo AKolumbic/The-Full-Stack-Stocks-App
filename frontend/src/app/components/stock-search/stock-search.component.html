@@ -1,26 +1,82 @@
-<div class="stock-search-container">
-  <h2>Stock Search</h2>
+<div class="stock-search-wrapper" [attr.data-theme]="currentTheme">
+  <div class="stock-search">
+    <div class="theme-toggle">
+      <button (click)="toggleTheme()" class="theme-toggle-btn">
+        <span *ngIf="currentTheme === 'light'" class="icon-moon"></span>
+        <span *ngIf="currentTheme === 'dark'" class="icon-sun"></span>
+        {{ currentTheme === "light" ? "Light Mode" : "Dark Mode" }}
+      </button>
+    </div>
 
-  <input
-    type="text"
-    [(ngModel)]="stockSymbol"
-    placeholder="Enter stock symbol"
-  />
-  <button (click)="searchStock()">Search</button>
+    <div class="search-panel card">
+      <h2>Stock Search</h2>
+      <div class="search-input-group">
+        <input
+          type="text"
+          [(ngModel)]="stockSymbol"
+          placeholder="Enter stock symbol (e.g., AAPL, MSFT)"
+          [disabled]="loading"
+        />
+        <button
+          (click)="searchStock()"
+          [disabled]="loading"
+          class="primary-btn"
+        >
+          <span *ngIf="!loading">Search</span>
+          <div *ngIf="loading" class="spinner"></div>
+        </button>
+      </div>
+      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+    </div>
 
-  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+    <div *ngIf="stockData" class="stock-data-panel card">
+      <div class="stock-header">
+        <h3>{{ stockSymbol }}</h3>
+        <button
+          (click)="addToWatchlist(stockSymbol)"
+          class="action-btn add-btn"
+        >
+          <i class="icon-star"></i> Add to Watchlist
+        </button>
+      </div>
+      <div class="stock-details">
+        <div class="price-display">
+          <span class="price">${{ stockData.price }}</span>
+          <span
+            class="change"
+            [ngClass]="stockData.change >= 0 ? 'positive' : 'negative'"
+          >
+            {{ stockData.change >= 0 ? "+" : "" }}{{ stockData.change }} ({{
+              stockData.percent_change
+            }})
+          </span>
+        </div>
+        <div class="chart-placeholder">
+          <!-- Placeholder for future stock chart -->
+          <div class="placeholder-text">
+            Stock chart visualization would go here
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div *ngIf="stockData">
-    <h3>Stock Data for {{ stockSymbol }}</h3>
-    <p>Price: ${{ stockData.price }}</p>
-    <button (click)="addToWatchlist(stockSymbol)">Add to Watchlist</button>
+    <div class="watchlist-panel card">
+      <h2>Watchlist</h2>
+      <div *ngIf="watchlist.length === 0" class="empty-state">
+        Your watchlist is empty. Search for stocks and add them to your
+        watchlist.
+      </div>
+      <ul *ngIf="watchlist.length > 0" class="watchlist">
+        <li *ngFor="let stock of watchlist" class="watchlist-item">
+          <span class="stock-symbol">{{ stock }}</span>
+          <button
+            (click)="removeFromWatchlist(stock)"
+            class="action-btn remove-btn"
+          >
+            <i class="icon-trash"></i> Remove
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
-
-  <h2>Watchlist</h2>
-  <ul>
-    <li *ngFor="let stock of watchlist">
-      {{ stock }}
-      <button (click)="removeFromWatchlist(stock)">Remove</button>
-    </li>
-  </ul>
 </div>

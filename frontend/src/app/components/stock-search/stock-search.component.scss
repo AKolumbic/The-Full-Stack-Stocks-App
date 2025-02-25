@@ -1,102 +1,380 @@
-.stock-search {
-  max-width: 400px;
-  margin: auto;
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+@use "sass:color";
+// Variables for consistent styling
+// Grayscale color palette
+$gray-50: #fafafa;
+$gray-100: #f5f5f5;
+$gray-200: #eeeeee;
+$gray-300: #e0e0e0;
+$gray-400: #bdbdbd;
+$gray-500: #9e9e9e;
+$gray-600: #757575;
+$gray-700: #616161;
+$gray-800: #424242;
+$gray-900: #212121;
 
-  &:hover {
-    transform: scale(1.02);
-    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.15);
+// Effects
+$transition-speed: 0.3s;
+
+// Theme Variables - CSS Custom Properties for light/dark mode
+:root {
+  // Default light theme
+  --color-bg: #{$gray-50};
+  --color-card-bg: #ffffff;
+  --color-text-primary: #{$gray-900};
+  --color-text-secondary: #{$gray-600};
+  --color-border: #{$gray-200};
+  --color-primary: #{$gray-800};
+  --color-primary-darker: #{$gray-900};
+  --color-secondary: #{$gray-100};
+  --color-success: #4caf50;
+  --color-success-darker: #3d8b40;
+  --color-error: #f44336;
+  --color-positive: #4caf50;
+  --color-negative: #f44336;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-focus-shadow: rgba(0, 0, 0, 0.2);
+  --color-hover-bg: rgba(0, 0, 0, 0.05);
+}
+
+// This ensures the data-theme attribute works properly
+.stock-search-wrapper {
+  // Pass the theme variables down to all components within the wrapper
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+
+  &[data-theme="dark"] {
+    --color-bg: #121212;
+    --color-card-bg: #1e1e1e;
+    --color-text-primary: #{$gray-100};
+    --color-text-secondary: #{$gray-400};
+    --color-border: #{$gray-700};
+    --color-primary: #90caf9;
+    --color-primary-darker: #64b5f6;
+    --color-secondary: #2c2c2c;
+    --color-success: #81c784;
+    --color-success-darker: #66bb6a;
+    --color-error: #e57373;
+    --color-positive: #81c784;
+    --color-negative: #e57373;
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    --color-focus-shadow: rgba(144, 202, 249, 0.4);
+    --color-hover-bg: rgba(255, 255, 255, 0.05);
   }
 
-  h2 {
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 15px;
+  // Ensure the wrapper takes up the whole space and applies transitions
+  min-height: 100vh;
+  width: 100%;
+  transition: background-color $transition-speed ease,
+    color $transition-speed ease;
+  padding: 1rem;
+}
+
+// Main container
+.stock-search {
+  max-width: 800px;
+  margin: 1rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: "Roboto", Arial, sans-serif;
+}
+
+// Theme toggle
+.theme-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all $transition-speed ease;
+
+  &:hover {
+    background-color: var(--color-hover-bg);
+  }
+}
+
+// Card styles - Enhanced for better visibility
+.card {
+  background: var(--color-card-bg);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 16px var(--color-shadow);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: transform $transition-speed ease,
+    box-shadow $transition-speed ease, background-color $transition-speed ease,
+    border-color $transition-speed ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px var(--color-shadow);
+  }
+}
+
+// Headings
+h2,
+h3 {
+  color: var(--color-text-primary);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+// Search panel
+.search-panel {
+  .search-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
   input {
-    margin-right: 10px;
-    padding: 10px;
-    border: 1px solid #ccc;
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--color-border);
     border-radius: 6px;
-    outline: none;
-    font-size: 16px;
-    transition: border 0.3s ease;
+    font-size: 1rem;
+    background-color: var(--color-card-bg);
+    color: var(--color-text-primary);
+    transition: border-color $transition-speed ease,
+      box-shadow $transition-speed ease, background-color $transition-speed ease,
+      color $transition-speed ease;
 
     &:focus {
-      border-color: #007bff;
-      box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
-    }
-  }
-
-  button {
-    padding: 10px 14px;
-    border: none;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.3s ease, transform 0.2s ease;
-
-    &:hover {
-      background: linear-gradient(135deg, #0056b3, #003a80);
-      transform: scale(1.05);
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-focus-shadow);
     }
 
-    &:active {
-      transform: scale(0.95);
-    }
-  }
-
-  .error {
-    color: #dc3545;
-    font-weight: bold;
-    margin-top: 10px;
-    animation: fadeIn 0.3s ease-in-out;
-  }
-
-  .watchlist {
-    margin-top: 20px;
-    padding: 15px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      font-size: 16px;
-    }
-
-    .remove-btn {
-      background: #dc3545;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background 0.3s ease;
-
-      &:hover {
-        background: #a71d2a;
-      }
+    &:disabled {
+      background-color: var(--color-secondary);
+      cursor: not-allowed;
     }
   }
 }
 
-/* Smooth fade-in effect */
+// Buttons
+button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, background-color $transition-speed ease;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+.primary-btn {
+  background-color: var(--color-primary);
+  color: var(--color-card-bg);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-darker);
+  }
+}
+
+.action-btn {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.add-btn {
+  background-color: var(--color-success);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-success-darker);
+  }
+}
+
+.remove-btn {
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid currentColor;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-hover-bg);
+  }
+}
+
+// Error message
+.error {
+  color: var(--color-error);
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: var(--color-hover-bg);
+  margin-top: 1rem;
+  font-weight: 500;
+  animation: fadeIn $transition-speed ease;
+}
+
+// Spinner should respect theme colors
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-shadow);
+  border-radius: 50%;
+  border-top-color: var(--color-card-bg);
+  animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Stock data panel
+.stock-data-panel {
+  .stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stock-details {
+    margin-top: 1rem;
+  }
+
+  .price-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+
+    .price {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+
+    .change {
+      font-size: 1.1rem;
+      font-weight: 500;
+
+      &.positive {
+        color: var(--color-positive);
+      }
+
+      &.negative {
+        color: var(--color-negative);
+      }
+    }
+  }
+
+  .chart-placeholder {
+    height: 250px;
+    background-color: var(--color-secondary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .placeholder-text {
+      color: var(--color-text-secondary);
+      font-style: italic;
+    }
+  }
+}
+
+// Watchlist panel
+.watchlist-panel {
+  .empty-state {
+    color: var(--color-text-secondary);
+    padding: 1.5rem;
+    text-align: center;
+    font-style: italic;
+    background-color: var(--color-secondary);
+    border-radius: 6px;
+  }
+
+  .watchlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .watchlist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color $transition-speed ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background-color: var(--color-hover-bg);
+    }
+
+    .stock-symbol {
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+  }
+}
+
+// Icons (placeholder for future implementation)
+[class^="icon-"] {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+
+.icon-star::before {
+  content: "★";
+}
+
+.icon-trash::before {
+  content: "🗑️";
+}
+
+.icon-moon::before {
+  content: "🌙";
+}
+
+.icon-sun::before {
+  content: "☀️";
+}
+
+// Animation
 @keyframes fadeIn {
   from {
     opacity: 0;

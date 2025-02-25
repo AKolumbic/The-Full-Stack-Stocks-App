@@ -6,6 +6,7 @@ import {
 } from '@angular/core/testing';
 import { StockSearchComponent } from './stock-search.component';
 import { StockSearchService } from '../../services/stock-search.service';
+import { ThemeService } from '../../services/theme.service';
 import { of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
@@ -17,10 +18,20 @@ class FakeStockSearchService {
   removeFromWatchlist = jasmine.createSpy('removeFromWatchlist');
 }
 
+// Create a fake ThemeService with spies for its methods.
+class FakeThemeService {
+  getCurrentTheme = jasmine
+    .createSpy('getCurrentTheme')
+    .and.returnValue('light');
+  toggleTheme = jasmine.createSpy('toggleTheme');
+  theme$ = of('light');
+}
+
 describe('StockSearchComponent', () => {
   let component: StockSearchComponent;
   let fixture: ComponentFixture<StockSearchComponent>;
   let stockService: FakeStockSearchService;
+  let themeService: FakeThemeService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -28,12 +39,14 @@ describe('StockSearchComponent', () => {
       imports: [StockSearchComponent],
       providers: [
         { provide: StockSearchService, useClass: FakeStockSearchService },
+        { provide: ThemeService, useClass: FakeThemeService },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StockSearchComponent);
     component = fixture.componentInstance;
     stockService = TestBed.inject(StockSearchService) as any;
+    themeService = TestBed.inject(ThemeService) as any;
 
     // Default stub for getWatchlist so ngOnInit can run without errors.
     stockService.getWatchlist.and.returnValue(of([]));
@@ -47,6 +60,17 @@ describe('StockSearchComponent', () => {
     spyOn(component, 'fetchWatchlist');
     fixture.detectChanges(); // triggers ngOnInit
     expect(component.fetchWatchlist).toHaveBeenCalled();
+  });
+
+  it('should get the current theme on initialization', () => {
+    fixture.detectChanges(); // triggers ngOnInit
+    expect(themeService.getCurrentTheme).toHaveBeenCalled();
+    expect(component.currentTheme).toBe('light');
+  });
+
+  it('should toggle the theme when toggleTheme is called', () => {
+    component.toggleTheme();
+    expect(themeService.toggleTheme).toHaveBeenCalled();
   });
 
   describe('#searchStock', () => {
