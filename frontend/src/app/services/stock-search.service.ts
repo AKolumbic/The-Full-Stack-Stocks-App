@@ -31,9 +31,8 @@ export class StockSearchService {
   constructor(private http: HttpClient) {}
 
   getStockData(symbol: string): Observable<StockData> {
-    // For development, return mock data
-    // In production, this would call the actual API
-    return of(this.getMockStockData(symbol)).pipe(
+    // Call the actual backend API
+    return this.http.get<StockData>(`${this.apiUrl}/stocks/${symbol}`).pipe(
       catchError((error) => {
         console.error('Error fetching stock data:', error);
         throw new Error('Failed to fetch stock data. Please try again later.');
@@ -45,16 +44,31 @@ export class StockSearchService {
     symbol: string,
     period: string = '1m'
   ): Observable<HistoricalData> {
-    // For development, return mock data
-    // In production, this would call: return this.http.get<HistoricalData>(`${this.apiUrl}/${symbol}/history?period=${period}`);
-    return of(this.getMockHistoricalData(symbol, period)).pipe(
-      catchError((error) => {
-        console.error('Error fetching historical data:', error);
-        throw new Error(
-          'Failed to fetch historical data. Please try again later.'
-        );
-      })
-    );
+    // Call the chart endpoint we implemented
+    return this.http
+      .get<any>(`${this.apiUrl}/chart/${symbol}?period=${period}`)
+      .pipe(
+        map((chartData) => {
+          // Convert chart data format to historical data format
+          const data = chartData.dates.map((date: string, index: number) => ({
+            date: date,
+            price: chartData.prices[index],
+          }));
+
+          return {
+            symbol: chartData.symbol,
+            period: chartData.period,
+            data: data,
+            trend: chartData.trend,
+          };
+        }),
+        catchError((error) => {
+          console.error('Error fetching historical data:', error);
+          throw new Error(
+            'Failed to fetch historical data. Please try again later.'
+          );
+        })
+      );
   }
 
   // Fetch watchlist
@@ -64,12 +78,19 @@ export class StockSearchService {
 
   // Add stock to watchlist
   addToWatchlist(symbol: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/watchlist/${symbol}`, {}); // Must send an empty object `{}` for FastAPI
+    return this.http.post(`${this.apiUrl}/watchlist/${symbol}`, {});
   }
 
   // Remove stock from watchlist
   removeFromWatchlist(symbol: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/watchlist/${symbol}`);
+  }
+
+  // Debug method to see raw Alpha Vantage data
+  debugAlphaVantage(symbol: string, period: string = '1m'): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/chart/debug/${symbol}?period=${period}`
+    );
   }
 
   private getMockStockData(symbol: string): StockData {

@@ -100,7 +100,7 @@ $transition-speed: 0.3s;
   font-weight: 500;
 
   &:hover {
-    background-color: darken(#4a90e2, 10%);
+    background-color: color.adjust(#4a90e2, $lightness: 10%);
   }
 
   .icon-moon,
@@ -220,7 +220,7 @@ button {
   min-width: 100px;
 
   &:hover {
-    background-color: darken(#4a90e2, 10%);
+    background-color: color.adjust(#4a90e2, $lightness: 10%);
   }
 
   &:disabled {
@@ -472,7 +472,7 @@ button {
       border-radius: 6px;
 
       &:hover {
-        background-color: darken(#27ae60, 10%);
+        background-color: color.adjust(#27ae60, $lightness: -10%);
       }
     }
 

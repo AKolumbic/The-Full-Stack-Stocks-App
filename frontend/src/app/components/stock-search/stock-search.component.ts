@@ -10,10 +10,8 @@ import {
 } from '../../services/stock-search.service';
 import { ThemeService, Theme } from '../../services/theme.service';
 import { Subscription } from 'rxjs';
-import {
-  StockChartComponent,
-  ChartData,
-} from '../../components/stock-chart/stock-chart.component';
+import { StockChartComponent } from '../../components/stock-chart/stock-chart.component';
+import { ChartData } from '../../services/stock-chart.service';
 
 interface WatchlistItem {
   symbol: string;
@@ -78,19 +76,15 @@ export class StockSearchComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetch stock data from backend
+   * Get stock and chart data synchronously
    */
-  searchStock() {
-    if (!this.stockSymbol) return;
-
+  private getStockWithChartData(symbol: string, period: string = '1m') {
     this.loading = true;
     this.errorMessage = '';
 
-    // Convert symbol to uppercase for consistency
-    this.stockSymbol = this.stockSymbol.toUpperCase().trim();
-
+    // First get stock data
     this.stockService
-      .getStockData(this.stockSymbol)
+      .getStockData(symbol)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -98,17 +92,33 @@ export class StockSearchComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (data) => {
+          console.log('Stock data received:', data);
           this.stockData = data;
           this.errorMessage = '';
-          this.getHistoricalData(this.stockSymbol, this.selectedPeriod);
+
+          // Then get chart data
+          this.getHistoricalData(symbol, period);
         },
         error: (err) => {
           console.error('Error fetching stock data:', err);
-          this.errorMessage = `Stock not found: ${this.stockSymbol}`;
+          this.errorMessage = `Stock not found: ${symbol}`;
           this.stockData = null;
           this.chartData = null;
         },
       });
+  }
+
+  /**
+   * Fetch stock data from the backend API
+   */
+  searchStock() {
+    if (!this.stockSymbol) return;
+
+    // Convert symbol to uppercase for consistency
+    this.stockSymbol = this.stockSymbol.toUpperCase().trim();
+
+    // Get both stock data and chart data
+    this.getStockWithChartData(this.stockSymbol, this.selectedPeriod);
   }
 
   /**
@@ -149,6 +159,8 @@ export class StockSearchComponent implements OnInit, OnDestroy {
       : 'rgba(255, 99, 132, 0.2)';
 
     this.chartData = {
+      symbol: data.symbol,
+      period: data.period,
       dates,
       prices,
       trend: data.trend,
@@ -252,6 +264,8 @@ export class StockSearchComponent implements OnInit, OnDestroy {
             : 'rgba(255, 99, 132, 0.2)';
 
           item.chartData = {
+            symbol: item.symbol,
+            period: '1m',
             dates,
             prices,
             trend: data.trend,

@@ -1,16 +1,20 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js/auto';
 import { registerables } from 'chart.js';
+import {
+  StockChartService,
+  ChartData,
+} from '../../services/stock-chart.service';
 
 // Register all Chart.js components
 Chart.register(...registerables);
-
-export interface ChartData {
-  dates: string[];
-  prices: number[];
-  trend: 'up' | 'down' | 'neutral';
-}
 
 @Component({
   selector: 'app-stock-chart',
@@ -35,40 +39,84 @@ export interface ChartData {
     `,
   ],
 })
-export class StockChartComponent implements OnChanges {
-  @Input() chartData!: ChartData;
+export class StockChartComponent implements OnChanges, OnInit {
+  @Input() chartData?: ChartData;
+  @Input() symbol?: string;
+  @Input() period: string = '1m';
   @Input() isMiniChart: boolean = false;
 
   private chart: Chart | null = null;
   private canvas: HTMLCanvasElement | null = null;
 
-  ngAfterViewInit() {
-    this.canvas = document.querySelector('canvas') as HTMLCanvasElement;
-    if (this.canvas && this.chartData) {
-      this.createChart();
+  constructor(private stockChartService: StockChartService) {}
+
+  ngOnInit() {
+    // If no chartData is provided but symbol is, fetch the data
+    if (!this.chartData && this.symbol) {
+      this.fetchChartData();
     }
   }
 
+  /**
+   * Fetch chart data from the service
+   */
+  private fetchChartData() {
+    if (!this.symbol) return;
+
+    this.stockChartService.getChartData(this.symbol, this.period).subscribe({
+      next: (data) => {
+        this.chartData = data;
+        this.renderChart();
+      },
+      error: (error) => {
+        console.error('Error fetching chart data:', error);
+      },
+    });
+  }
+
+  ngAfterViewInit() {
+    this.canvas = document.querySelector('canvas') as HTMLCanvasElement;
+    this.renderChart();
+  }
+
   ngOnChanges(changes: SimpleChanges) {
+    // If symbol or period changes, fetch new data
+    if (
+      (changes['symbol'] && !changes['symbol'].firstChange) ||
+      (changes['period'] && !changes['period'].firstChange)
+    ) {
+      this.fetchChartData();
+    }
+
+    // If chartData or isMiniChart changes directly, re-render the chart
     if (
       (changes['chartData'] && !changes['chartData'].firstChange) ||
       (changes['isMiniChart'] && !changes['isMiniChart'].firstChange)
     ) {
-      if (this.chart) {
-        this.chart.destroy();
-      }
-
-      if (this.canvas && this.chartData) {
-        this.createChart();
-      }
+      this.renderChart();
     }
   }
 
-  private createChart() {
-    if (!this.canvas) return;
+  /**
+   * Render the chart with the current data
+   */
+  private renderChart() {
+    if (!this.canvas || !this.chartData) return;
+
+    // Destroy existing chart if it exists
+    if (this.chart) {
+      this.chart.destroy();
+    }
 
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
+
+    // Check if there's an error in the chart data
+    if (this.chartData.error) {
+      // Display error message instead of chart
+      this.displayErrorMessage(ctx);
+      return;
+    }
 
     // Set chart color based on trend
     const strokeColor =
@@ -154,5 +202,26 @@ export class StockChartComponent implements OnChanges {
     };
 
     this.chart = new Chart(ctx, config);
+  }
+
+  /**
+   * Display error message on canvas
+   */
+  private displayErrorMessage(ctx: CanvasRenderingContext2D) {
+    const errorMessage =
+      this.chartData?.errorMessage || 'Error Retrieving Chart Data';
+    const canvas = this.canvas!;
+
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set text style for error message
+    ctx.font = this.isMiniChart ? '14px Arial' : '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(231, 76, 60, 1)'; // Red color for error
+
+    // Draw error message in the center of the canvas
+    ctx.fillText(errorMessage, canvas.width / 2, canvas.height / 2);
   }
 }
