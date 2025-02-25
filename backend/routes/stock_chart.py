@@ -103,7 +103,7 @@ async def get_chart_data(symbol: str, period: str = "1m"):
     
     Parameters:
     - symbol: Stock symbol (e.g., AAPL, MSFT)
-    - period: Time period for chart data ("1d", "1w", "1m", "3m", "6m", "1y", "5y")
+    - period: Time period for chart data ("1d", "5d", "1w", "1m", "3m", "6m", "1y", "5y")
     
     Returns:
     - Dictionary with dates and prices for charting
@@ -122,7 +122,7 @@ async def get_chart_data(symbol: str, period: str = "1m"):
         return cached_data
     
     # Define time series function and interval based on period
-    if period in ["1d", "1w", "1m"]:
+    if period in ["1d", "5d", "1w", "1m"]:
         function = "TIME_SERIES_DAILY"
         key = "Time Series (Daily)"
         outputsize = "compact"  # returns the latest 100 data points
@@ -199,8 +199,11 @@ async def get_chart_data(symbol: str, period: str = "1m"):
         if period == "1d":
             # Only the most recent data point
             filtered_dates = sorted_dates[-1:]
-        elif period == "1w":
+        elif period == "5d":
             # Last 5 trading days
+            filtered_dates = sorted_dates[-5:]
+        elif period == "1w":
+            # Last 5 trading days (same as 5d for simplicity)
             filtered_dates = sorted_dates[-5:]
         elif period == "1m":
             # Last ~21 trading days (approximately 1 month)

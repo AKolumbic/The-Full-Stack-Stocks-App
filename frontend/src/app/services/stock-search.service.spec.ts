@@ -3,7 +3,11 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { StockSearchService } from './stock-search.service';
+import {
+  StockSearchService,
+  StockData,
+  HistoricalData,
+} from './stock-search.service';
 
 describe('StockSearchService', () => {
   let service: StockSearchService;
@@ -32,7 +36,12 @@ describe('StockSearchService', () => {
   describe('#getStockData', () => {
     const symbol = 'AAPL';
     it('should perform a GET request and return stock data', () => {
-      const dummyResponse = { price: 150, change: 2, percent_change: '1.33%' };
+      const dummyResponse: StockData = {
+        symbol: 'AAPL',
+        price: 150,
+        change: 2,
+        percent_change: '1.33%',
+      };
 
       service.getStockData(symbol).subscribe((data) => {
         expect(data).toEqual(dummyResponse);
@@ -157,6 +166,86 @@ describe('StockSearchService', () => {
       const req = httpMock.expectOne(`${baseUrl}/watchlist/${symbol}`);
       expect(req.request.method).toBe('DELETE');
       req.flush(errorMessage, { status: 404, statusText: 'Not Found' });
+    });
+  });
+
+  // --- Tests for getHistoricalData ---
+  describe('#getHistoricalData', () => {
+    const symbol = 'AAPL';
+    const period = '1m';
+
+    it('should fetch and convert chart data to historical data format', () => {
+      const mockChartData = {
+        symbol: 'AAPL',
+        period: '1m',
+        dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
+        prices: [150.25, 151.75, 153.5],
+        trend: 'up',
+      };
+
+      const expectedHistoricalData: HistoricalData = {
+        symbol: 'AAPL',
+        period: '1m',
+        data: [
+          { date: '2023-01-01', price: 150.25 },
+          { date: '2023-01-02', price: 151.75 },
+          { date: '2023-01-03', price: 153.5 },
+        ],
+        trend: 'up' as const,
+      };
+
+      service.getHistoricalData(symbol, period).subscribe((data) => {
+        expect(data).toEqual(expectedHistoricalData);
+      });
+
+      const req = httpMock.expectOne(
+        `${baseUrl}/chart/${symbol}?period=${period}`
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush(mockChartData);
+    });
+
+    it('should propagate error when fetching historical data fails', () => {
+      service.getHistoricalData(symbol, period).subscribe(
+        () => fail('expected an error, not historical data'),
+        (error) => {
+          expect(error).toBeTruthy();
+        }
+      );
+
+      const req = httpMock.expectOne(
+        `${baseUrl}/chart/${symbol}?period=${period}`
+      );
+      expect(req.request.method).toBe('GET');
+      req.error(new ErrorEvent('Network error'));
+    });
+  });
+
+  // --- Tests for debugAlphaVantage ---
+  describe('#debugAlphaVantage', () => {
+    const symbol = 'AAPL';
+    const period = '1m';
+
+    it('should fetch raw Alpha Vantage data', () => {
+      const mockDebugData = {
+        symbol: 'AAPL',
+        period: '1m',
+        raw_data: {
+          /* mock API response */
+        },
+        api_url: 'https://www.alphavantage.co/query',
+        params: { function: 'TIME_SERIES_DAILY', symbol: 'AAPL' },
+      };
+
+      service.debugAlphaVantage(symbol, period).subscribe((data) => {
+        expect(data).toEqual(mockDebugData);
+      });
+
+      const req = httpMock.expectOne(
+        `${baseUrl}/chart/debug/${symbol}?period=${period}`
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush(mockDebugData);
     });
   });
 });

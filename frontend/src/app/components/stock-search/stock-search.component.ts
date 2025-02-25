@@ -18,6 +18,10 @@ interface WatchlistItem {
   expanded: boolean;
   chartData?: ChartData;
   loading: boolean;
+  price?: number;
+  change?: number;
+  percent_change?: string;
+  selectedPeriod?: string;
 }
 
 @Component({
@@ -37,6 +41,7 @@ export class StockSearchComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   loading: boolean = false;
   currentTheme: Theme;
+  periods: string[] = ['1d', '5d', '1w', '1m', '3m', '6m', '1y', '5y'];
 
   private themeSubscription: Subscription | null = null;
 
@@ -117,6 +122,37 @@ export class StockSearchComponent implements OnInit, OnDestroy {
     // Convert symbol to uppercase for consistency
     this.stockSymbol = this.stockSymbol.toUpperCase().trim();
 
+    // Check if the stock is already in the watchlist
+    if (this.watchlist.some((item) => item.symbol === this.stockSymbol)) {
+      this.errorMessage = `${this.stockSymbol} is already in your watchlist. Please check the watchlist section below.`;
+
+      // Find the watchlist item and expand it
+      const existingItem = this.watchlist.find(
+        (item) => item.symbol === this.stockSymbol
+      );
+      if (existingItem) {
+        existingItem.expanded = true;
+
+        // Load chart data if not already loaded
+        if (!existingItem.chartData) {
+          this.loadWatchlistItemChart(existingItem);
+        }
+
+        // Scroll to the watchlist section
+        setTimeout(() => {
+          const watchlistElement = document.querySelector('.watchlist-section');
+          if (watchlistElement) {
+            watchlistElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      }
+
+      return;
+    }
+
+    // Clear previous error message
+    this.errorMessage = '';
+
     // Get both stock data and chart data
     this.getStockWithChartData(this.stockSymbol, this.selectedPeriod);
   }
@@ -183,18 +219,81 @@ export class StockSearchComponent implements OnInit, OnDestroy {
   fetchWatchlist() {
     this.stockService.getWatchlist().subscribe({
       next: (data) => {
-        // Map strings to WatchlistItem objects
-        this.watchlist = data.map((symbol) => ({
-          symbol,
-          expanded: false,
-          loading: false,
-        }));
+        // Map strings to WatchlistItem objects and keep expanded state for existing items
+        const existingItems = this.watchlist || [];
+        this.watchlist = data.map((symbol) => {
+          const existingItem = existingItems.find(
+            (item) => item.symbol === symbol
+          );
+          return {
+            symbol,
+            expanded: existingItem ? existingItem.expanded : false,
+            loading: false,
+            chartData: existingItem ? existingItem.chartData : undefined,
+            selectedPeriod: existingItem ? existingItem.selectedPeriod : '1m',
+          };
+        });
+
+        // Fetch stock data for each watchlist item
+        this.watchlist.forEach((item) => this.loadWatchlistItemData(item));
       },
       error: (err) => {
         console.error('Error fetching watchlist:', err);
         this.watchlist = [];
       },
     });
+  }
+
+  /**
+   * Load stock data for a watchlist item
+   */
+  private loadWatchlistItemData(item: WatchlistItem) {
+    this.stockService.getStockData(item.symbol).subscribe({
+      next: (data) => {
+        item.price = data.price;
+        item.change = data.change;
+        item.percent_change = data.percent_change;
+      },
+      error: (err) => {
+        console.error(`Error fetching stock data for ${item.symbol}:`, err);
+      },
+    });
+  }
+
+  /**
+   * Load chart data for a watchlist item
+   */
+  private loadWatchlistItemChart(item: WatchlistItem) {
+    item.loading = true;
+    const period = item.selectedPeriod || '1m';
+
+    this.stockService.getHistoricalData(item.symbol, period).subscribe({
+      next: (data) => {
+        const dates = data.data.map((point) => point.date);
+        const prices = data.data.map((point) => point.price);
+
+        item.chartData = {
+          symbol: item.symbol,
+          period: period,
+          dates,
+          prices,
+          trend: data.trend,
+        };
+        item.loading = false;
+      },
+      error: (err) => {
+        console.error(`Error fetching chart data for ${item.symbol}:`, err);
+        item.loading = false;
+      },
+    });
+  }
+
+  /**
+   * Change period for a watchlist item chart
+   */
+  changeWatchlistItemPeriod(item: WatchlistItem, period: string) {
+    item.selectedPeriod = period;
+    this.loadWatchlistItemChart(item);
   }
 
   /**
@@ -210,7 +309,81 @@ export class StockSearchComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.stockService.addToWatchlist(symbol).subscribe({
       next: () => {
-        this.fetchWatchlist();
+        // Store current stock data for use in the watchlist
+        const currentPrice = this.stockData?.price;
+        const currentChange = this.stockData?.change;
+        const currentPercentChange = this.stockData?.percent_change;
+
+        // Clear current stock data
+        this.stockData = null;
+        this.chartData = null;
+        this.stockSymbol = '';
+
+        // Fetch watchlist and expand the new item
+        this.stockService.getWatchlist().subscribe({
+          next: (data) => {
+            this.watchlist = data.map((sym) => {
+              // If this is the newly added symbol, use the data we just fetched
+              if (sym === symbol) {
+                return {
+                  symbol,
+                  expanded: true, // Expand the newly added symbol
+                  loading: true, // Start loading for the new symbol
+                  chartData: undefined,
+                  selectedPeriod: '1m',
+                  price: currentPrice,
+                  change: currentChange,
+                  percent_change: currentPercentChange,
+                };
+              } else {
+                // For existing items, preserve their current state
+                const existingItem = this.watchlist.find(
+                  (item) => item.symbol === sym
+                );
+                return {
+                  symbol: sym,
+                  expanded: existingItem ? existingItem.expanded : false,
+                  loading: false,
+                  chartData: existingItem ? existingItem.chartData : undefined,
+                  selectedPeriod: existingItem
+                    ? existingItem.selectedPeriod
+                    : '1m',
+                  price: existingItem?.price,
+                  change: existingItem?.change,
+                  percent_change: existingItem?.percent_change,
+                };
+              }
+            });
+
+            // Load chart data for the new item
+            if (symbol) {
+              const newItem = this.watchlist.find(
+                (item) => item.symbol === symbol
+              );
+              if (newItem) {
+                this.loadWatchlistItemChart(newItem);
+
+                // If we don't have stock data for the new item yet, fetch it
+                if (newItem.price === undefined) {
+                  this.loadWatchlistItemData(newItem);
+                }
+              }
+            }
+
+            // Scroll to watchlist section after a short delay to ensure DOM is updated
+            setTimeout(() => {
+              const watchlistElement =
+                document.querySelector('.watchlist-section');
+              if (watchlistElement) {
+                watchlistElement.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 100);
+          },
+          error: (err) => {
+            console.error('Error fetching watchlist:', err);
+            this.watchlist = [];
+          },
+        });
       },
       error: (err) => {
         console.error('Error adding to watchlist:', err);
@@ -243,40 +416,7 @@ export class StockSearchComponent implements OnInit, OnDestroy {
 
     // Load chart data if expanding and not already loaded
     if (item.expanded && !item.chartData) {
-      item.loading = true;
-      this.stockService.getHistoricalData(item.symbol, '1m').subscribe({
-        next: (data) => {
-          // Generate chart data for this watchlist item
-          const dates = data.data.map((point) => point.date);
-          const prices = data.data.map((point) => point.price);
-
-          // Determine if trend is positive
-          const startPrice = prices[0];
-          const endPrice = prices[prices.length - 1];
-          const isPositive = endPrice >= startPrice;
-
-          // Set color based on trend
-          const lineColor = isPositive
-            ? 'rgba(75, 192, 75, 1)'
-            : 'rgba(255, 99, 132, 1)';
-          const fillColor = isPositive
-            ? 'rgba(75, 192, 75, 0.2)'
-            : 'rgba(255, 99, 132, 0.2)';
-
-          item.chartData = {
-            symbol: item.symbol,
-            period: '1m',
-            dates,
-            prices,
-            trend: data.trend,
-          };
-          item.loading = false;
-        },
-        error: (err) => {
-          console.error(`Error fetching chart data for ${item.symbol}:`, err);
-          item.loading = false;
-        },
-      });
+      this.loadWatchlistItemChart(item);
     }
   }
 }

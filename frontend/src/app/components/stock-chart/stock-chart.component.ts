@@ -4,6 +4,9 @@ import {
   OnChanges,
   SimpleChanges,
   OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js/auto';
@@ -39,14 +42,14 @@ Chart.register(...registerables);
     `,
   ],
 })
-export class StockChartComponent implements OnChanges, OnInit {
+export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
   @Input() chartData?: ChartData;
   @Input() symbol?: string;
   @Input() period: string = '1m';
   @Input() isMiniChart: boolean = false;
+  @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   private chart: Chart | null = null;
-  private canvas: HTMLCanvasElement | null = null;
 
   constructor(private stockChartService: StockChartService) {}
 
@@ -75,7 +78,6 @@ export class StockChartComponent implements OnChanges, OnInit {
   }
 
   ngAfterViewInit() {
-    this.canvas = document.querySelector('canvas') as HTMLCanvasElement;
     this.renderChart();
   }
 
@@ -101,14 +103,14 @@ export class StockChartComponent implements OnChanges, OnInit {
    * Render the chart with the current data
    */
   private renderChart() {
-    if (!this.canvas || !this.chartData) return;
+    if (!this.chartCanvas || !this.chartData) return;
 
     // Destroy existing chart if it exists
     if (this.chart) {
       this.chart.destroy();
     }
 
-    const ctx = this.canvas.getContext('2d');
+    const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
     // Check if there's an error in the chart data
@@ -210,7 +212,7 @@ export class StockChartComponent implements OnChanges, OnInit {
   private displayErrorMessage(ctx: CanvasRenderingContext2D) {
     const errorMessage =
       this.chartData?.errorMessage || 'Error Retrieving Chart Data';
-    const canvas = this.canvas!;
+    const canvas = this.chartCanvas.nativeElement;
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);

@@ -15,13 +15,13 @@ The Automated Stock Market Prediction (ASMP) application is designed to provide 
 
 ## Tech Stack
 
-### Frontend:
+### Frontend
 
 - **Framework**: Angular
 - **Data Visualization**: D3.js
 - **State Management**: RxJS
 
-### Backend:
+### Backend
 
 - **Framework**: FastAPI (Python)
 - **Machine Learning**: Scikit-learn or TensorFlow
