@@ -2,8 +2,6 @@
   <div class="stock-search">
     <div class="theme-toggle">
       <button (click)="toggleTheme()" class="theme-toggle-btn">
-        <span *ngIf="currentTheme === 'light'" class="icon-moon"></span>
-        <span *ngIf="currentTheme === 'dark'" class="icon-sun"></span>
         {{ currentTheme === "light" ? "Light Mode" : "Dark Mode" }}
       </button>
     </div>
