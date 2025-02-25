@@ -52,7 +52,7 @@ cd asmp
 ```bash
 cd frontend
 npm install
-npm start
+ng serve
 ```
 
 ### Backend Setup
