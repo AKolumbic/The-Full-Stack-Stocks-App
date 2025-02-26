@@ -14,6 +14,7 @@
           [(ngModel)]="stockSymbol"
           placeholder="Enter stock symbol (e.g., AAPL, MSFT)"
           [disabled]="loading"
+          (keyup.enter)="searchStock()"
         />
         <button
           (click)="searchStock()"
@@ -34,7 +35,7 @@
           (click)="addToWatchlist(stockSymbol)"
           class="action-btn add-btn"
         >
-          <i class="icon-star"></i> Add to Watchlist
+          Add to Watchlist
         </button>
       </div>
       <div class="stock-details">

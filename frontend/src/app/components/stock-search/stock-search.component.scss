@@ -384,10 +384,6 @@ button {
   &:last-child {
     border-bottom: none;
   }
-
-  &:hover {
-    background-color: var(--color-hover-bg);
-  }
 }
 
 .watchlist-item-header {
