@@ -127,3 +127,81 @@ def get_stock_data(symbol: str):
     )
 
     return {**stock_data, "source": "Alpha Vantage API"}
+
+@router.get("/ticker/popular")
+async def get_popular_stocks():
+    """
+    Fetch data for a set of popular stocks to be displayed in the ticker.
+    Returns data for approximately 10-15 popular stocks.
+    """
+    # List of popular stock symbols to show in the ticker
+    popular_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "JPM", "V", "WMT", "BAC", "PG", "DIS"]
+    
+    result = []
+    
+    for symbol in popular_symbols:
+        # Check MongoDB for cached stock data first
+        cached_stock = stocks_collection.find_one({"symbol": symbol})
+        
+        if cached_stock and _is_cache_valid(cached_stock):
+            # Use cached data if valid
+            stock_data = {
+                "symbol": cached_stock["symbol"],
+                "price": cached_stock["price"],
+                "change": cached_stock["change"],
+                "percent_change": cached_stock["percent_change"],
+                "last_updated": cached_stock["last_updated"],
+                "source": "cache"
+            }
+            result.append(stock_data)
+        else:
+            # If not in cache or not valid, we'll add it to the result later
+            # when we fetch from the API
+            pass
+    
+    # If we already have all the stocks in cache, return them
+    if len(result) == len(popular_symbols):
+        return result
+    
+    # Fetch missing stocks from Alpha Vantage (within rate limits)
+    # Since we're limited by the Alpha Vantage API, we'll only fetch a few
+    # stocks at a time to avoid hitting the rate limit
+    symbols_to_fetch = [s for s in popular_symbols if not any(r["symbol"] == s for r in result)]
+    
+    for symbol in symbols_to_fetch[:3]:  # Fetch at most 3 to avoid rate limits
+        try:
+            # Fetch from Alpha Vantage API
+            params = {
+                "function": "GLOBAL_QUOTE",
+                "symbol": symbol,
+                "apikey": ALPHA_VANTAGE_API_KEY
+            }
+            response = session.get(ALPHA_VANTAGE_URL, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            global_quote = data.get("Global Quote")
+            if global_quote:
+                stock_data = {
+                    "symbol": global_quote.get("01. symbol", symbol),
+                    "price": float(global_quote.get("05. price", 0)),
+                    "change": float(global_quote.get("09. change", 0)),
+                    "percent_change": global_quote.get("10. change percent", "0%"),
+                    "last_updated": datetime.utcnow().isoformat(),
+                    "source": "api"
+                }
+                
+                # Update the MongoDB cache
+                stocks_collection.update_one(
+                    {"symbol": stock_data["symbol"]},
+                    {"$set": stock_data},
+                    upsert=True
+                )
+                
+                result.append(stock_data)
+        except Exception as e:
+            logger.warning(f"Error fetching data for {symbol}: {str(e)}")
+            # Continue with other symbols if one fails
+            continue
+    
+    return result

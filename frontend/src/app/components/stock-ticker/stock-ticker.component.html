@@ -1,0 +1,34 @@
+<div class="ticker-container">
+  <div class="ticker-wrapper">
+    <div *ngIf="loading" class="ticker-loading">Loading market data...</div>
+    <div *ngIf="error" class="ticker-error">
+      {{ error }}
+    </div>
+    <div *ngIf="!loading && !error && stocks.length > 0" class="ticker-content">
+      <div class="ticker-scroll">
+        <div class="ticker-items">
+          <div *ngFor="let stock of stocks" class="ticker-item">
+            <span class="ticker-symbol">{{ stock.symbol }}</span>
+            <span class="ticker-price">${{ stock.price.toFixed(2) }}</span>
+            <span [ngClass]="['ticker-change', getChangeClass(stock.change)]">
+              {{ stock.change >= 0 ? "+" : ""
+              }}{{ stock.change.toFixed(2) }} ({{ stock.percent_change }})
+            </span>
+          </div>
+          <!-- Duplicate items for seamless scrolling effect -->
+          <div *ngFor="let stock of stocks" class="ticker-item">
+            <span class="ticker-symbol">{{ stock.symbol }}</span>
+            <span class="ticker-price">${{ stock.price.toFixed(2) }}</span>
+            <span [ngClass]="['ticker-change', getChangeClass(stock.change)]">
+              {{ stock.change >= 0 ? "+" : ""
+              }}{{ stock.change.toFixed(2) }} ({{ stock.percent_change }})
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!loading && !error && stocks.length === 0" class="ticker-empty">
+      No market data available
+    </div>
+  </div>
+</div>
