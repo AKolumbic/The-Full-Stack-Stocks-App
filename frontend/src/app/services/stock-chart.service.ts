@@ -12,6 +12,8 @@ export interface ChartData {
   last_updated?: string;
   error?: boolean;
   errorMessage?: string;
+  rate_limited?: boolean;
+  rate_limit_message?: string;
 }
 
 @Injectable({
@@ -42,12 +44,32 @@ export class StockChartService {
             }`
           );
         }
+
+        // Check if the API returned a rate limit message
+        if (data.rate_limited) {
+          console.warn('API rate limit reached:', data.rate_limit_message);
+        }
+
         return data;
       }),
       catchError((error) => {
         console.error('Error fetching chart data:', error);
 
-        // Return error state instead of mock data
+        // Check if this is a rate limit error (HTTP 429)
+        if (error.status === 429) {
+          return of({
+            symbol: symbol,
+            period: period,
+            dates: ['Rate Limited'],
+            prices: [0],
+            trend: 'neutral' as const,
+            error: true,
+            errorMessage: 'API rate limit reached. Please try again later.',
+            rate_limited: true,
+          });
+        }
+
+        // Return error state for other errors
         return of({
           symbol: symbol,
           period: period,

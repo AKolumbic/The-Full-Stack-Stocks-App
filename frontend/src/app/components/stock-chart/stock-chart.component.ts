@@ -11,6 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js/auto';
 import { registerables } from 'chart.js';
+import 'chartjs-adapter-date-fns'; // Import date adapter for time axes
 import {
   StockChartService,
   ChartData,
@@ -26,6 +27,14 @@ Chart.register(...registerables);
   template: `
     <div class="chart-wrapper" [class.mini-chart]="isMiniChart">
       <canvas #chartCanvas></canvas>
+
+      <!-- Rate limit warning banner -->
+      <div *ngIf="chartData?.rate_limited" class="rate-limit-warning">
+        <span class="warning-icon">⚠️</span>
+        <span class="warning-text"
+          >Data may be outdated due to API rate limits</span
+        >
+      </div>
     </div>
   `,
   styles: [
@@ -38,6 +47,31 @@ Chart.register(...registerables);
 
       .mini-chart {
         height: 150px;
+      }
+
+      .rate-limit-warning {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(255, 193, 7, 0.9);
+        color: #333;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        z-index: 10;
+        max-width: 80%;
+      }
+
+      .warning-icon {
+        margin-right: 5px;
+      }
+
+      .warning-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     `,
   ],
@@ -100,6 +134,22 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
   }
 
   /**
+   * Determine if the data is intraday (has timestamps rather than just dates)
+   */
+  private isIntradayData(): boolean {
+    if (
+      !this.chartData ||
+      !this.chartData.dates ||
+      this.chartData.dates.length === 0
+    ) {
+      return false;
+    }
+
+    // Check if the first date includes a time component (HH:MM format)
+    return this.period === '1d' && this.chartData.dates[0].includes(':');
+  }
+
+  /**
    * Render the chart with the current data
    */
   private renderChart() {
@@ -120,6 +170,9 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
       return;
     }
 
+    // Check if we're dealing with intraday data
+    const isIntraday = this.isIntradayData();
+
     // Set chart color based on trend
     const strokeColor =
       this.chartData.trend === 'up'
@@ -135,10 +188,18 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
         ? 'rgba(231, 76, 60, 0.1)'
         : 'rgba(74, 144, 226, 0.1)';
 
+    // Prepare labels based on data type
+    const labels = isIntraday
+      ? this.chartData.dates.map((time) => {
+          // For intraday data, use the timestamp directly
+          return time;
+        })
+      : this.chartData.dates;
+
     const config: ChartConfiguration = {
       type: 'line' as ChartType,
       data: {
-        labels: this.chartData.dates,
+        labels: labels,
         datasets: [
           {
             label: 'Price',
@@ -146,7 +207,7 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
             borderColor: strokeColor,
             backgroundColor: fillColor,
             borderWidth: this.isMiniChart ? 2 : 3,
-            pointRadius: this.isMiniChart ? 0 : 2,
+            pointRadius: this.isMiniChart ? 0 : isIntraday ? 1 : 2,
             pointHoverRadius: this.isMiniChart ? 3 : 5,
             tension: 0.4,
             fill: true,
@@ -187,6 +248,23 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
             grid: {
               display: !this.isMiniChart,
             },
+            // For intraday data, use time scale
+            type: isIntraday ? 'time' : 'category',
+            time: isIntraday
+              ? {
+                  unit: 'hour',
+                  displayFormats: {
+                    hour: 'HH:mm',
+                  },
+                }
+              : undefined,
+            min: isIntraday ? '09:30' : undefined,
+            max: isIntraday ? '16:00' : undefined,
+            ticks: {
+              maxRotation: isIntraday ? 0 : 0,
+              autoSkip: true,
+              maxTicksLimit: isIntraday ? 6 : 10,
+            },
           },
           y: {
             display: !this.isMiniChart,
@@ -210,8 +288,15 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
    * Display error message on canvas
    */
   private displayErrorMessage(ctx: CanvasRenderingContext2D) {
-    const errorMessage =
+    // Get appropriate error message
+    let errorMessage =
       this.chartData?.errorMessage || 'Error Retrieving Chart Data';
+
+    // If this is a rate limit error, use a more specific message
+    if (this.chartData?.rate_limited) {
+      errorMessage = 'Using cached data due to API rate limits';
+    }
+
     const canvas = this.chartCanvas.nativeElement;
 
     // Clear the canvas
@@ -221,7 +306,11 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
     ctx.font = this.isMiniChart ? '14px Arial' : '18px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(231, 76, 60, 1)'; // Red color for error
+
+    // Use different color for rate limit warnings (yellow) vs. errors (red)
+    ctx.fillStyle = this.chartData?.rate_limited
+      ? 'rgba(255, 193, 7, 1)' // Yellow for rate limits
+      : 'rgba(231, 76, 60, 1)'; // Red for errors
 
     // Draw error message in the center of the canvas
     ctx.fillText(errorMessage, canvas.width / 2, canvas.height / 2);

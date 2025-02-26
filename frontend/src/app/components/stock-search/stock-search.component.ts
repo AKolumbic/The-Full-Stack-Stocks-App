@@ -41,7 +41,7 @@ export class StockSearchComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   loading: boolean = false;
   currentTheme: Theme;
-  periods: string[] = ['1d', '5d', '1w', '1m', '3m', '6m', '1y', '5y'];
+  periods: string[] = ['1d', '1w', '1m', '3m', '6m', '1y', '5y'];
 
   private themeSubscription: Subscription | null = null;
 
@@ -292,6 +292,11 @@ export class StockSearchComponent implements OnInit, OnDestroy {
    * Change period for a watchlist item chart
    */
   changeWatchlistItemPeriod(item: WatchlistItem, period: string) {
+    // Don't reload if the period is the same
+    if (item.selectedPeriod === period) {
+      return;
+    }
+
     item.selectedPeriod = period;
     this.loadWatchlistItemChart(item);
   }
