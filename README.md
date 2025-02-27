@@ -70,10 +70,12 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload
 ```
 
-## Contributing
+## Screenshots
 
-1. **Fork** the repository.
-2. **Clone** your forked repo.
-3. **Create a new branch** for your feature/fix.
-4. **Commit** your changes and push to GitHub.
-5. Open a **pull request** to merge your changes.
+### Dark Mode
+
+![Stock Market Prediction Application in Dark Mode](frontend/public/darkmode.png)
+
+### Light Mode
+
+![Stock Market Prediction Application in Light Mode](frontend/public/lightmode.png)
