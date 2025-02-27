@@ -1,0 +1,23 @@
+<div class="chart-wrapper" [class.mini-chart]="isMiniChart">
+  <canvas #chartCanvas></canvas>
+
+  <!-- Rate limit warning banner -->
+  <div *ngIf="chartData?.rate_limited" class="rate-limit-warning">
+    <span class="warning-icon">⚠️</span>
+    <span class="warning-text"
+      >Data may be outdated due to API rate limits</span
+    >
+  </div>
+
+  <!-- Alpha Vantage API Rate Limit Error Banner -->
+  <div *ngIf="isAlphaVantageRateLimited" class="alpha-vantage-limit-error">
+    <span class="error-icon">⚠️</span>
+    <div class="error-content">
+      <div class="error-title">API Rate Limit Reached</div>
+      <div class="error-message">
+        Alpha Vantage's free tier is limited to 25 requests per day. Please try
+        again tomorrow or check for cached data.
+      </div>
+    </div>
+  </div>
+</div>

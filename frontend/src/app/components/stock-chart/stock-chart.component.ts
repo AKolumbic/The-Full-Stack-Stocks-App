@@ -24,57 +24,8 @@ Chart.register(...registerables);
   selector: 'app-stock-chart',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="chart-wrapper" [class.mini-chart]="isMiniChart">
-      <canvas #chartCanvas></canvas>
-
-      <!-- Rate limit warning banner -->
-      <div *ngIf="chartData?.rate_limited" class="rate-limit-warning">
-        <span class="warning-icon">⚠️</span>
-        <span class="warning-text"
-          >Data may be outdated due to API rate limits</span
-        >
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .chart-wrapper {
-        width: 100%;
-        height: 100%;
-        position: relative;
-      }
-
-      .mini-chart {
-        height: 150px;
-      }
-
-      .rate-limit-warning {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background-color: rgba(255, 193, 7, 0.9);
-        color: #333;
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        z-index: 10;
-        max-width: 80%;
-      }
-
-      .warning-icon {
-        margin-right: 5px;
-      }
-
-      .warning-text {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    `,
-  ],
+  templateUrl: './stock-chart.component.html',
+  styleUrls: ['./stock-chart.component.scss'],
 })
 export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
   @Input() chartData?: ChartData;
@@ -84,6 +35,7 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   private chart: Chart | null = null;
+  isAlphaVantageRateLimited: boolean = false;
 
   constructor(private stockChartService: StockChartService) {}
 
@@ -103,12 +55,44 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
     this.stockChartService.getChartData(this.symbol, this.period).subscribe({
       next: (data) => {
         this.chartData = data;
+        this.checkForAlphaVantageRateLimit(data);
         this.renderChart();
       },
       error: (error) => {
         console.error('Error fetching chart data:', error);
+        // Check if error is due to Alpha Vantage rate limit (HTTP 429)
+        if (error?.status === 429) {
+          this.isAlphaVantageRateLimited = true;
+          // Create a minimal chart data object with error information
+          this.chartData = {
+            error: true,
+            errorMessage:
+              error.error?.message ||
+              'Alpha Vantage API rate limit reached (25 requests per day)',
+            dates: [],
+            prices: [],
+            symbol: this.symbol || '',
+            period: this.period,
+            trend: 'neutral',
+            rate_limited: true,
+          };
+        }
       },
     });
+  }
+
+  /**
+   * Check if the error is related to Alpha Vantage rate limit
+   */
+  private checkForAlphaVantageRateLimit(data: ChartData) {
+    this.isAlphaVantageRateLimited = false;
+    if (
+      data.error &&
+      (data.errorMessage?.toLowerCase().includes('alpha vantage') ||
+        data.errorMessage?.toLowerCase().includes('rate limit'))
+    ) {
+      this.isAlphaVantageRateLimited = true;
+    }
   }
 
   ngAfterViewInit() {
@@ -129,6 +113,9 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
       (changes['chartData'] && !changes['chartData'].firstChange) ||
       (changes['isMiniChart'] && !changes['isMiniChart'].firstChange)
     ) {
+      if (changes['chartData']) {
+        this.checkForAlphaVantageRateLimit(changes['chartData'].currentValue);
+      }
       this.renderChart();
     }
   }
@@ -292,8 +279,13 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
     let errorMessage =
       this.chartData?.errorMessage || 'Error Retrieving Chart Data';
 
-    // If this is a rate limit error, use a more specific message
-    if (this.chartData?.rate_limited) {
+    // If this is an Alpha Vantage rate limit error, use a more specific message
+    if (this.isAlphaVantageRateLimited) {
+      errorMessage =
+        'Alpha Vantage API rate limit reached (25 requests per day)';
+    }
+    // If this is a general rate limit error, use a more generic message
+    else if (this.chartData?.rate_limited) {
       errorMessage = 'Using cached data due to API rate limits';
     }
 
@@ -308,9 +300,11 @@ export class StockChartComponent implements OnChanges, OnInit, AfterViewInit {
     ctx.textBaseline = 'middle';
 
     // Use different color for rate limit warnings (yellow) vs. errors (red)
-    ctx.fillStyle = this.chartData?.rate_limited
-      ? 'rgba(255, 193, 7, 1)' // Yellow for rate limits
-      : 'rgba(231, 76, 60, 1)'; // Red for errors
+    ctx.fillStyle = this.isAlphaVantageRateLimited
+      ? 'rgba(231, 76, 60, 1)' // Red for Alpha Vantage rate limit
+      : this.chartData?.rate_limited
+      ? 'rgba(255, 193, 7, 1)' // Yellow for other rate limits
+      : 'rgba(231, 76, 60, 1)'; // Red for other errors
 
     // Draw error message in the center of the canvas
     ctx.fillText(errorMessage, canvas.width / 2, canvas.height / 2);
