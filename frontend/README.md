@@ -2,6 +2,16 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.1.6.
 
+## Screenshots
+
+### Dark Mode
+
+![Dice Rolling Calculator in Dark Mode](public/darkMode.png)
+
+### Light Mode
+
+![Dice Rolling Calculator in Light Mode](public/lightMode.png)
+
 ## Development server
 
 To start a local development server, run:
