@@ -1,17 +1,19 @@
-# Automated Stock Market Prediction (ASMP)
+# The Full Stack Stocks App
 
 ## Overview
 
-The Automated Stock Market Prediction (ASMP) application is designed to provide stock search capabilities, historical data analysis, machine learning-based price predictions, and watchlist management. The application is built with **Angular** for the frontend and **FastAPI** for the backend, leveraging **MongoDB** for data storage.
+The Full Stack Stocks App is a modern stock tracking and analysis tool built with a responsive UI. It provides real-time stock data visualization, watchlist management, and interactive charting with multiple time periods. The application features a clean, user-friendly interface with both light and dark themes, making it easy to monitor your favorite stocks. It's built with **Angular** for the frontend and **FastAPI** for the backend, communicating with financial APIs to fetch market data.
 
 ## Features
 
-- **Stock Search**: Search for stocks using ticker symbols.
-- **Historical Data Analysis**: Interactive visualizations of stock price trends using D3.js.
-- **Machine Learning Predictions**: Forecast stock prices based on historical data.
-- **Watchlist Management**: Save and track favorite stocks.
-- **Real-Time Updates**: Fetch and display live stock prices.
-- **Authentication**: Secure OAuth2.0 login with Google/GitHub.
+- **Stock Search**: Quickly look up stocks by ticker symbol (e.g., AAPL, MSFT)
+- **Interactive Charts**: View historical stock price data with customizable time periods (1d, 1w, 1m, 3m, 1y)
+- **Watchlist Management**: Save favorite stocks to a personalized watchlist for easy monitoring
+- **Real-Time Price Data**: Track current stock prices, daily changes, and percentage movements
+- **Dark/Light Theme**: Toggle between dark and light modes for comfortable viewing in any environment
+- **Responsive Design**: Optimized viewing experience across desktop and mobile devices
+- **Expandable Stock Details**: Click on watchlist items to reveal detailed charts and information
+- **Graceful Error Handling**: Smart handling of API rate limits with clear user feedback
 
 ## Tech Stack
 
